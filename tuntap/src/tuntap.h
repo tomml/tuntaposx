@@ -112,6 +112,8 @@ class tuntap_manager {
 		 * switch */
 		virtual ~tuntap_manager();
 
+		static int sysctl_tapuseropen SYSCTL_HANDLER_ARGS;
+
 		/* here are the cdev routines for the class. They will figure out the manager object
 		 * and call the service methods declared below.
 		 */
@@ -184,8 +186,11 @@ class tuntap_interface {
 
 	public:
 		static int tapuponopen;
+		static int tapuseropen;
 
 	protected:
+		/* major dev number */
+		unsigned short major;
 		/* interface number */
 		unsigned int unit;
 		/* family name */
@@ -234,7 +239,7 @@ class tuntap_interface {
 		virtual bool initialize(unsigned short major, unsigned short unit) = 0;
 
 		/* character device management */
-		virtual bool register_chardev(unsigned short major);
+		virtual bool register_chardev();
 		virtual void unregister_chardev();
 
 		/* network interface management */

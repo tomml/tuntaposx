@@ -113,6 +113,7 @@ tap_interface::tap_interface() {
 bool
 tap_interface::initialize(unsigned short major, unsigned short unit)
 {
+	this->major = major;
 	this->unit = unit;
 	this->family_name = TAP_FAMILY_NAME;
 	this->family = IFNET_FAMILY_ETHERNET;
@@ -123,7 +124,7 @@ tap_interface::initialize(unsigned short major, unsigned short unit)
 	dprintf("tap: starting interface %s%d\n", TAP_FAMILY_NAME, unit);
 
 	/* register character device */
-	if (!tuntap_interface::register_chardev(major))
+	if (!tuntap_interface::register_chardev())
 		return false;
 
 	return true;

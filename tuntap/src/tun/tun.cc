@@ -51,6 +51,7 @@ extern "C" {
 bool
 tun_interface::initialize(unsigned short major, unsigned short unit)
 {
+	this->major = major;
 	this->unit = unit;
 	this->family_name = TUN_FAMILY_NAME;
 	this->family = IFNET_FAMILY_TUN;
@@ -61,7 +62,7 @@ tun_interface::initialize(unsigned short major, unsigned short unit)
 	dprintf("tun: starting interface %s%d\n", family_name, unit);
 
 	/* register character device */
-	if (!tuntap_interface::register_chardev(major))
+	if (!tuntap_interface::register_chardev())
 		return false;
 
 	return true;

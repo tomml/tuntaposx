@@ -281,11 +281,19 @@ tuntap_interface::~tuntap_interface()
 {
 }
 
+//static
+int tuntap_interface::tapuseropen = 0;
+
 bool
-tuntap_interface::register_chardev(unsigned short major)
+tuntap_interface::register_chardev()
 {
+	/* check if all users should be permitted to open /dev/tap devices */
+	int perms = 0660;
+	if (!strcmp(family_name, TAP_FAMILY_NAME) && tapuseropen) {
+		perms = 0666;
+	}
 	/* register character device */
-	dev_handle = devfs_make_node(makedev(major, unit), DEVFS_CHAR, 0, 0, 0660, "%s%d",
+	dev_handle = devfs_make_node(makedev(major, unit), DEVFS_CHAR, 0, 0, perms, "%s%d",
 			family_name, (int) unit);
 
 	if (dev_handle == NULL) {

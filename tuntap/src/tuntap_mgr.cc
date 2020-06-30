@@ -90,7 +90,45 @@ tuntap_manager::initialize_statics()
 	statics_initialized = true;
 }
 
+SYSCTL_PROC(_net, OID_AUTO, tap_user_open, CTLTYPE_INT|CTLFLAG_RW, &tuntap_interface::tapuseropen, 0, &tuntap_manager::sysctl_tapuseropen, "I", "Allow user to open /dev/tap devices");
 SYSCTL_INT(_net, OID_AUTO, tap_up_on_open, CTLFLAG_RW, &tuntap_interface::tapuponopen, 0, "Bring interface up when /dev/tap is opened");
+
+//static
+int tuntap_manager::sysctl_tapuseropen SYSCTL_HANDLER_ARGS {
+	int error;
+	int previous_value = tuntap_interface::tapuseropen;
+
+	error = sysctl_handle_int(oidp, oidp->oid_arg1, oidp->oid_arg2, req);
+	if (error || !req->newptr) {
+		return SYSCTL_OUT(req, &tuntap_interface::tapuseropen, sizeof(tuntap_interface::tapuseropen));
+	}
+
+	dprintf("tuntap: stored %d for net.tap_user_open", tuntap_interface::tapuseropen);
+	if (previous_value != tuntap_interface::tapuseropen) {
+		dprintf("tap: net.tap_user_open updated. Changing permissions of /dev/tap devices.");
+		/* Find the tuntap_manager for /dev/tap */
+		tuntap_manager *mgr = NULL;
+		for (int i = 0; i < MAX_CDEV; i++) {
+			if (mgr_map[i] != NULL && !strcmp(mgr_map[i]->family, TAP_FAMILY_NAME)) {
+				mgr = mgr_map[i];
+			}
+		}
+		if (mgr == NULL) {
+			dprintf("tuntap: No tuntap_manager registered for %s.", TAP_FAMILY_NAME);
+			return ENOTSUP;
+		}
+		/* Update permissions by registers all the /dev/tap devices again. This
+		 * is a destructive action if a /dev/tap is in use. */
+		if (mgr->tuntaps != NULL) {
+			for (int i = 0; i < mgr->count; i++) {
+				if (mgr->tuntaps[i] == NULL) continue;
+				mgr->tuntaps[i]->unregister_chardev();
+				mgr->tuntaps[i]->register_chardev();
+			}
+		}
+	}
+	return error;
+}
 
 bool
 tuntap_manager::initialize(unsigned int count, char *family)
@@ -100,6 +138,7 @@ tuntap_manager::initialize(unsigned int count, char *family)
 	this->tuntaps = NULL;
 
 	if (!strcmp(family, TAP_FAMILY_NAME)) {
+		sysctl_register_oid(&sysctl__net_tap_user_open);
 		sysctl_register_oid(&sysctl__net_tap_up_on_open);
 	}
 

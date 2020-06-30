@@ -39,6 +39,7 @@ extern "C" {
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/select.h>
+#include <sys/sysctl.h>
 #include <sys/systm.h>
 #include <sys/kpi_mbuf.h>
 
@@ -180,6 +181,9 @@ class tuntap_mbuf_queue {
 };
 
 class tuntap_interface {
+
+	public:
+		static int tapuponopen;
 
 	protected:
 		/* interface number */

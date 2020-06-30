@@ -28,6 +28,7 @@
  */
 
 #include "tuntap.h"
+#include "tap/tap.h"
 #include "mem.h"
 
 extern "C" {
@@ -36,6 +37,9 @@ extern "C" {
 #include <sys/param.h>
 #include <sys/syslog.h>
 #include <sys/systm.h>
+
+#include <sys/sysctl.h>
+#include <string.h>
 
 #include <vm/vm_kern.h>
 
@@ -86,12 +90,18 @@ tuntap_manager::initialize_statics()
 	statics_initialized = true;
 }
 
+SYSCTL_INT(_net, OID_AUTO, tap_up_on_open, CTLFLAG_RW, &tuntap_interface::tapuponopen, 0, "Bring interface up when /dev/tap is opened");
+
 bool
 tuntap_manager::initialize(unsigned int count, char *family)
 {
 	this->count = count;
 	this->family = family;
 	this->tuntaps = NULL;
+
+	if (!strcmp(family, TAP_FAMILY_NAME)) {
+		sysctl_register_oid(&sysctl__net_tap_up_on_open);
+	}
 
 	if (!statics_initialized)
 		initialize_statics();

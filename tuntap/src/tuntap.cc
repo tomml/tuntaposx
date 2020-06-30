@@ -28,6 +28,7 @@
  */
 
 #include "tuntap.h"
+#include "tap/tap.h"
 
 #if 0
 #define dprintf(...)			log(LOG_INFO, __VA_ARGS__)
@@ -44,6 +45,8 @@ extern "C" {
 #include <sys/sockio.h>
 #include <sys/fcntl.h>
 #include <sys/kpi_socket.h>
+
+#include <sys/sysctl.h>
 
 #include <vm/vm_kern.h>
 
@@ -304,6 +307,9 @@ tuntap_interface::unregister_chardev()
 	dev_handle = NULL;
 }
 
+//static
+int tuntap_interface::tapuponopen = 0;
+
 bool
 tuntap_interface::register_interface(const struct sockaddr_dl* lladdr, void *bcaddr,
 		u_int32_t bcaddrlen)
@@ -355,13 +361,17 @@ tuntap_interface::register_interface(const struct sockaddr_dl* lladdr, void *bca
 		return false;
 	}
 
-	dprintf("setting interface flags\n");
+	dprintf("tuntap: setting interface flags\n");
 
 	/* set interface flags */
-	ifnet_set_flags(ifp, IFF_RUNNING | IFF_MULTICAST | IFF_SIMPLEX, (u_int16_t) ~0UL);
+	u_int16_t flags = IFF_RUNNING | IFF_MULTICAST | IFF_SIMPLEX;
+	if (!strcmp(family_name, TAP_FAMILY_NAME) && tapuponopen) {
+		flags |= IFF_UP;
+	}
+	ifnet_set_flags(ifp, flags, (u_int16_t) ~0UL);
 
-	dprintf("flags: %x\n", ifnet_flags(ifp));
-	
+	dprintf("tuntap: interface flags set to %x\n", ifnet_flags(ifp));
+
 	return true;
 }
 

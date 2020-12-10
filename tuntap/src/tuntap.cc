@@ -498,7 +498,7 @@ tuntap_interface::do_sock_ioctl(sa_family_t af, unsigned long cmd, void* arg) {
 	/* issue the ioctl */
 	err = sock_ioctl(sock, cmd, arg);
 	if (err)
-		log(LOG_ERR, "tuntap: socket ioctl %d failed: %d\n", cmd, err);
+		log(LOG_ERR, "tuntap: socket ioctl %d failed: %d\n", (int)cmd, err);
 
 	in_ioctl = false;
 
